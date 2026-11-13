@@ -2,10 +2,9 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { useParty } from '../store';
 import { STATIONS } from '../simulation/venue';
-import { getStationStory, getStoryImages, VENUE_REFERENCE } from '../stories/manifest';
+import { getStationStory } from '../stories/manifest';
 import type { StoryImage } from '../stories/types';
-import PlannedBuiltComparison from './PlannedBuiltComparison';
-import DesignProcessTimeline from './DesignProcessTimeline';
+import StationGallery from './StationGallery';
 import ImageLightbox from './ImageLightbox';
 
 export default function StationStoryPanel() {
@@ -33,19 +32,13 @@ export default function StationStoryPanel() {
     onCancel={e => { e.preventDefault(); e.stopPropagation(); if (!lightbox) select(null); }}
     onPointerDown={e => { backdropDown.current = e.target === e.currentTarget; }}
     onClick={e => { if (e.target === e.currentTarget && backdropDown.current) select(null); }}>
-    <div className="story-panel-toolbar"><button onClick={() => select(null)}><ArrowLeft size={15}/> Back to Venue</button><button className="icon-button" aria-label="Close station story" onClick={() => select(null)}><X size={19}/></button></div>
+    <button className="icon-button story-close" aria-label="Close station story" onClick={() => select(null)}><X size={21}/></button>
     <div className="story-panel-scroll" ref={scroll}>
-      <header className="story-heading"><div className="story-folio"><span className="eyebrow">THE PARTY, IN THE MAKING</span><span>{String(index + 1).padStart(2, '0')} <i>/ {String(STATIONS.length).padStart(2, '0')}</i></span></div><h2 id="station-story-title" ref={title} tabIndex={-1}>{station.name}</h2><p>{story.subtitle || station.subtitle}</p><div className="story-heading-rule" aria-hidden="true"><span/>✦<span/></div></header>
-      <div key={station.id} className="story-content">
-        <PlannedBuiltComparison story={story} onOpen={open}/>
-        {story.sourceNote && <p className="story-source-note">{story.sourceNote}</p>}
-        <DesignProcessTimeline story={story} onOpen={open}/>
-        {!story.intention && !story.iterations.length && !story.plannedImages.some(image => image.src) && !story.builtImages.some(image => image.src) && <p className="story-awaiting">The archive for this station is waiting for its concept artwork and photographs from the night.</p>}
-        <details className="story-reference"><summary>The original venue sketch</summary><button onClick={() => open(VENUE_REFERENCE)} aria-label="Enlarge the original venue sketch"><img src={VENUE_REFERENCE.src!} alt={VENUE_REFERENCE.alt} loading="lazy"/><span>{VENUE_REFERENCE.caption}</span></button></details>
-      </div>
+      <header className="story-heading"><h2 id="station-story-title" ref={title} tabIndex={-1}>{station.name}</h2><p>{station.subtitle}</p></header>
+      <StationGallery key={station.id} story={story} onOpen={open}/>
     </div>
-    <nav className="story-navigation" aria-label="Station stories"><button onClick={() => select(previous.id)} aria-label={`Previous Station: ${previous.name}`}><span><ArrowLeft size={14}/> Previous Station</span><strong>{previous.short}</strong></button><button onClick={() => select(next.id)} aria-label={`Next Station: ${next.name}`}><span>Next Station <ArrowRight size={14}/></span><strong>{next.short}</strong></button></nav>
+    <nav className="story-navigation" aria-label="Station stories"><button onClick={() => select(previous.id)} aria-label={`Previous Station: ${previous.name}`}><ArrowLeft size={16}/> Previous</button><span>{String(index + 1).padStart(2, '0')} / {String(STATIONS.length).padStart(2, '0')}</span><button onClick={() => select(next.id)} aria-label={`Next Station: ${next.name}`}>Next <ArrowRight size={16}/></button></nav>
     <span className="sr-only" aria-live="polite">Station {index + 1} of {STATIONS.length}: {station.name}</span>
-    {lightbox && <ImageLightbox images={[...getStoryImages(story), VENUE_REFERENCE]} initialId={lightbox} onClose={() => setLightbox(null)}/>}
+    {lightbox && <ImageLightbox images={[...story.builtImages, ...story.plannedImages]} initialId={lightbox} onClose={() => setLightbox(null)}/>}
   </dialog>;
 }

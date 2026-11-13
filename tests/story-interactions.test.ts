@@ -5,8 +5,7 @@ import { createCanvas, type Canvas } from '@napi-rs/canvas';
 import { act, createElement, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from '../src/App';
-import PlannedBuiltComparison from '../src/components/PlannedBuiltComparison';
-import StoryImageCard from '../src/components/StoryImageCard';
+import StationGallery from '../src/components/StationGallery';
 import { getStationStory } from '../src/stories/manifest';
 import { STATIONS } from '../src/simulation/venue';
 import { useParty } from '../src/store';
@@ -123,7 +122,14 @@ test('all nine stories open over the unchanged venue, preserve playback and came
     await env.click('.canvas-story-button[data-station-id="photo"]');
     await env.click('[aria-label^="Next Station"]'); assert.equal(useParty.getState().selected, 'charades');
     await env.click('[aria-label^="Previous Station"]'); assert.equal(useParty.getState().selected, 'photo');
-    assert.match(document.querySelector('.design-process')!.textContent!, /Change the drapes to black drapes/);
+    assert.equal(document.querySelector('.design-process, .story-source-note, .story-reference, .planned-built'), null);
+    assert.equal(document.querySelectorAll('.station-story-modal img').length, 1, 'only one gallery image is shown');
+    await env.click('.gallery-collections button:last-child');
+    await env.click('[aria-label="Next gallery image"]');
+    await env.click('[aria-label^="Next Station"]');
+    assert.match(document.querySelector('.station-gallery-empty')!.textContent!, /No photos added yet/);
+    await env.click('[aria-label^="Previous Station"]');
+    assert.equal(document.querySelector('.gallery-navigation>span')?.textContent, '1 / 8', 'returning to a station resets to its first party photo');
     await env.flush(performance.now() + 1000);
     assert.deepEqual(cameraSnapshot(), beforeCamera);
     await act(async () => document.querySelector('.station-story-modal')!.dispatchEvent(new env.dom.window.Event('cancel', { bubbles: true, cancelable: true })));
@@ -170,12 +176,12 @@ test('canvas clicks focus a story, playback continues, and nested image dismissa
     assert.equal(document.body.style.overflow, 'hidden');
     await env.flush(performance.now() + 700);
     assert.ok(simulation.elapsed > 0); assert.equal(useParty.getState().running, true);
-    await env.click('.story-reference summary');
-    await env.click('[aria-label="Enlarge the original venue sketch"]');
+    const photoButton = document.querySelector<HTMLButtonElement>('.station-gallery .story-image-open')!;
+    await env.click('.station-gallery .story-image-open');
     assert.ok(document.querySelector<HTMLDialogElement>('.image-lightbox')?.open);
     await act(async () => document.querySelector('.image-lightbox')!.dispatchEvent(new env.dom.window.Event('cancel', { bubbles: true, cancelable: true })));
     assert.equal(document.querySelector('.image-lightbox'), null); assert.equal(useParty.getState().selected, 'photo');
-    assert.equal(document.activeElement, document.querySelector('[aria-label="Enlarge the original venue sketch"]'));
+    assert.equal(document.activeElement, photoButton);
     await env.click('[aria-label="Close station story"]');
     assert.equal(document.body.style.overflow, '');
     assert.equal(useParty.getState().simulation, simulation); assert.equal(useParty.getState().running, true);
@@ -183,25 +189,31 @@ test('canvas clicks focus a story, playback continues, and nested image dismissa
   } finally { await env.cleanup(); }
 });
 
-test('provided image sequences, optional reveal slider, and broken-image fallback are usable without network assets', async () => {
+test('the compact gallery switches collections, skips missing assets and handles broken images', async () => {
   const env = environment();
   try {
     const story = getStationStory(STATIONS[0]);
     story.plannedImages = [{ id: 'missing', src: null, alt: 'Missing moodboard' }, { id: 'p1', src: '/test-1.jpg', alt: 'Test concept 1' }, { id: 'p2', src: '/test-2.jpg', alt: 'Test concept 2' }];
     story.builtImages = [{ id: 'b1', src: '/test-built.jpg', alt: 'Test built image' }];
-    story.comparison = { plannedId: 'p2', builtId: 'b1' };
     let opened = '';
-    await act(async () => env.root.render(createElement(PlannedBuiltComparison, { story, onOpen: image => { opened = image.id; } })));
+    await act(async () => env.root.render(createElement(StationGallery, { story, onOpen: image => { opened = image.id; } })));
+    await env.click('[aria-label="Enlarge Test built image"]'); assert.equal(opened, 'b1');
+    assert.equal(document.querySelector('.gallery-navigation'), null, 'one image needs no paging controls');
+    await env.click('.gallery-collections button:last-child');
     await env.click('[aria-label="Enlarge Test concept 1"]'); assert.equal(opened, 'p1');
-    await env.click('[aria-label="Show Test concept 2"]');
+    assert.equal(document.querySelector('.gallery-navigation>span')?.textContent, '1 / 2');
+    await env.click('[aria-label="Next gallery image"]');
     assert.ok(document.querySelector('[aria-label="Enlarge Test concept 2"]'));
-    await env.click('[aria-label="Show Missing moodboard"]');
-    assert.match(document.querySelector('.story-image-sequence')!.textContent!, /Image not yet supplied/);
-    await env.click('.before-after>.text-button');
-    assert.equal(document.querySelector<HTMLInputElement>('[aria-label="Planned image reveal"]')?.value, '50');
-    await act(async () => env.root.render(createElement(StoryImageCard, { image: story.plannedImages[1], label: 'Planned', onOpen: () => {} })));
+    await env.click('[aria-label="Next gallery image"]');
+    assert.ok(document.querySelector('[aria-label="Enlarge Test concept 1"]'), 'paging wraps without missing placeholders');
+    await env.click('[aria-label="Previous gallery image"]');
+    assert.ok(document.querySelector('[aria-label="Enlarge Test concept 2"]'));
+    assert.equal(document.querySelectorAll('img').length, 1);
+    assert.equal(document.querySelector('figcaption'), null, 'long captions stay in the full image viewer');
     await act(async () => document.querySelector('img')!.dispatchEvent(new env.dom.window.Event('error')));
     assert.match(document.body.textContent!, /Image unavailable/); assert.equal(document.querySelector('.story-image-open'), null);
+    await env.click('.gallery-collections button:first-child');
+    assert.ok(document.querySelector('[aria-label="Enlarge Test built image"]'), 'a failed image does not break the other collection');
   } finally { await env.cleanup(); }
 });
 
