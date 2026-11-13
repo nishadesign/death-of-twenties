@@ -350,7 +350,13 @@ test('preparation checkmarks persist across stations, resets and a fresh app mou
     assert.equal(document.querySelector('#station-before-tab')?.getAttribute('aria-selected'), 'true');
     assert.ok(document.querySelector('.station-gallery')!.compareDocumentPosition(document.querySelector('.station-checklist')!) & env.dom.window.Node.DOCUMENT_POSITION_FOLLOWING, 'the checklist follows the Before carousel');
     assert.equal(document.querySelectorAll('.station-checklist input[type="checkbox"]').length, 16);
+    assert.equal(document.querySelector<HTMLDetailsElement>('.station-checklist')!.open, false);
+    await env.click('.checklist-heading');
+    assert.equal(document.querySelector<HTMLDetailsElement>('.station-checklist')!.open, true);
     await env.click('input[value="puri-shells"]');
+    assert.equal(document.querySelector('.checklist-progress')?.textContent, '1 / 16 done');
+    await env.click('.checklist-heading');
+    assert.equal(document.querySelector<HTMLDetailsElement>('.station-checklist')!.open, false);
     assert.equal(document.querySelector('.checklist-progress')?.textContent, '1 / 16 done');
     assert.deepEqual(JSON.parse(env.dom.window.localStorage.getItem(CHECKLIST_STORAGE_KEY)!), ['puri-shells']);
     await env.click('#station-after-tab');
@@ -363,6 +369,7 @@ test('preparation checkmarks persist across stations, resets and a fresh app mou
     assert.equal(document.querySelectorAll('.checklist-group').length, 2);
     assert.equal(document.querySelectorAll('.station-checklist input').length, 25);
     assert.equal(document.querySelector<HTMLInputElement>('input[value="margarita-tequila"]')!.checked, false);
+    await env.click('.checklist-heading');
     await env.click('input[value="margarita-tequila"]');
     await env.click('input[value="last-drop-gin"]');
     assert.equal(document.querySelector('.checklist-progress')?.textContent, '2 / 25 done');
@@ -376,6 +383,7 @@ test('preparation checkmarks persist across stations, resets and a fresh app mou
     await act(async () => env.root.render(createElement(App)));
     assert.equal(document.querySelector<HTMLInputElement>('input[value="puri-shells"]')!.checked, true);
     assert.match(document.querySelector('.checklist-save-note')!.textContent!, /Saved in this browser/);
+    await env.click('.checklist-heading');
     await env.click('input[value="puri-shells"]');
     assert.deepEqual(JSON.parse(env.dom.window.localStorage.getItem(CHECKLIST_STORAGE_KEY)!), ['margarita-tequila', 'last-drop-gin']);
     await env.click('[aria-label="Close station story"]');
@@ -391,6 +399,7 @@ test('checklists remain usable for the current visit when browser storage is blo
     useParty.getState().reset(2030); useParty.getState().select(null);
     await act(async () => env.root.render(createElement(App)));
     await env.click('.station-row[data-station-id="pizza"]');
+    await env.click('.checklist-heading');
     await env.click('input[value="final-supper-pizzas"]');
     assert.equal(document.querySelector('.checklist-progress')?.textContent, '1 / 8 done');
     assert.match(document.querySelector('.checklist-save-note')!.textContent!, /this visit only/);

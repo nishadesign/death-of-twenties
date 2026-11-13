@@ -1,3 +1,4 @@
+import { ChevronDown } from 'lucide-react';
 import type { StationId } from '../simulation/types';
 import { STATION_CHECKLISTS } from '../stories/checklists';
 import { useChecklistProgress } from './ChecklistProgress';
@@ -7,8 +8,8 @@ export default function StationChecklist({ stationId }: { stationId: StationId }
   const groups = STATION_CHECKLISTS[stationId];
   if (!groups?.length) return null;
   const items = groups.flatMap(group => group.items), done = items.filter(item => checked.has(item.id)).length;
-  return <section className="station-checklist" aria-label="Preparation checklist">
-    <header className="checklist-heading"><h3>Checklist</h3><span className="checklist-progress" aria-live="polite">{done} / {items.length} done</span></header>
+  return <details className="station-checklist" aria-label="Preparation checklist">
+    <summary className="checklist-heading"><span className="checklist-title">Checklist</span><span className="checklist-progress" aria-live="polite">{done} / {items.length} done</span><ChevronDown size={16} aria-hidden="true"/></summary>
     <div className="checklist-body">
       <p className="checklist-save-note" role="status">{saved ? 'Saved in this browser.' : 'Saved for this visit only.'}</p>
       {groups.map(group => <fieldset key={group.id} className="checklist-group">
@@ -20,5 +21,5 @@ export default function StationChecklist({ stationId }: { stationId: StationId }
         </label>)}
       </fieldset>)}
     </div>
-  </section>;
+  </details>;
 }
