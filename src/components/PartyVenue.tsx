@@ -13,10 +13,9 @@ export default function PartyVenue() {
   const cameraRef = useRef<Camera>({ zoom: OVERVIEW.zoom, center: { ...OVERVIEW.center } });
   const sizeRef = useRef({ width: 0, height: 0 });
   const [zoom, setZoom] = useState(1), zoomRef = useRef(100);
-  const [hover, setHover] = useState<{ id: StationId; x: number; y: number } | null>(null), hovered = useRef<StationId | null>(null);
+  const [hover, setHover] = useState<StationId | null>(null), hovered = useRef<StationId | null>(null);
   const stationButtons = useRef(new Map<StationId, HTMLButtonElement>());
   const drag = useRef<{ x: number; y: number; camera: Camera; moved: boolean } | null>(null);
-  const showStationTitles = useParty(state => state.showStationTitles);
   const mode = useParty(state => state.mode), selected = useParty(state => state.selected), select = useParty(state => state.select);
   useEffect(() => { hovered.current = null; setHover(null); }, [selected]);
 
@@ -79,14 +78,13 @@ export default function PartyVenue() {
           if (Math.abs(dx) + Math.abs(dy) > 5) d.moved = true;
           if (d.moved) { const scale = baseScale(sizeRef.current) * d.camera.zoom; cameraRef.current = { zoom: d.camera.zoom, center: { x: d.camera.center.x - dx / scale, y: d.camera.center.y - dy / scale } }; }
         } else if (e.pointerType !== 'touch') {
-          const id = hit(e.clientX, e.clientY), rect = e.currentTarget.getBoundingClientRect(); hovered.current = id;
-          setHover(id ? { id, x: Math.max(8, Math.min(rect.width - 162, e.clientX - rect.left + 12)), y: Math.max(8, e.clientY - rect.top - 38) } : null);
+          const id = hit(e.clientX, e.clientY); hovered.current = id;
+          setHover(id);
         }
       }}
       onPointerUp={e => { const down = drag.current; drag.current = null; if (!down) return; if (!down.moved) { const id = hit(e.clientX, e.clientY); if (id) { e.currentTarget.focus({ preventScroll: true }); select(id); } } if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId); }}
       onPointerCancel={() => { drag.current = null; clearHover(); }} onLostPointerCapture={() => { drag.current = null; }} onPointerLeave={clearHover}/>
-    <div className="canvas-station-buttons" role="group" aria-label="Explore station stories">{STATIONS.map((station, index) => <button key={station.id} data-station-id={station.id} ref={el => { if (el) stationButtons.current.set(station.id, el); else stationButtons.current.delete(station.id); }} className="canvas-story-button" aria-label={`Explore the Story: ${station.name}`} aria-pressed={selected === station.id} onClick={() => select(station.id)} onFocus={() => { hovered.current = station.id; }} onBlur={clearHover}><span aria-hidden="true">✦</span><span className="canvas-story-button-label">{showStationTitles || ['photo', 'charades'].includes(station.id) ? station.short : `Station ${String(index + 1).padStart(2, '0')}`} · Explore the Story</span></button>)}</div>
-    {hover && <div className="station-hover-tip" role="tooltip" style={{ left: hover.x, top: hover.y }}>Explore the Story <span aria-hidden="true">↗</span></div>}
+    <div className="canvas-station-buttons" role="group" aria-label="Explore station stories">{STATIONS.map(station => <button key={station.id} data-station-id={station.id} ref={el => { if (el) stationButtons.current.set(station.id, el); else stationButtons.current.delete(station.id); }} className="canvas-story-button" aria-label={`Explore the Story: ${station.name}`} aria-pressed={selected === station.id} onClick={() => select(station.id)} onFocus={() => { hovered.current = station.id; }} onBlur={clearHover}><span aria-hidden="true">✦</span></button>)}</div>
     <div className="canvas-note"><span className="tiny-diamond"/> YOUR VENUE, BROUGHT TO LIFE</div>
     <div className="zoom-controls"><button aria-label="Zoom out" onClick={() => changeZoom(-.2)} disabled={zoom <= 1}><Minus size={14}/></button><span>{Math.round(zoom * 100)}%</span><button aria-label="Zoom in" onClick={() => changeZoom(.2)} disabled={zoom >= 2.5}><Plus size={14}/></button><i/><button aria-label="Fit entire venue" onClick={() => { cameraRef.current = { zoom: OVERVIEW.zoom, center: { ...OVERVIEW.center } }; }}><Expand size={14}/></button></div>
     {mode === 'heatmap' && <div className="heatmap-legend"><span>Relative density</span><i/><div><span>Low</span><span>Very high</span></div></div>}

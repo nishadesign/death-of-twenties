@@ -160,7 +160,7 @@ test('canvas clicks focus a story, playback continues, and nested image dismissa
     const tray = stationBounds(simulation.stations.find(station => station.id === 'demons')!);
     const trayCenter = { x: tray.x + tray.w / 2, y: tray.y + tray.h / 2 };
     await pointer(trayCenter, ['pointermove']);
-    assert.ok(document.querySelector('.station-hover-tip'));
+    assert.equal(document.querySelector('.station-hover-tip'), null, 'station hover has no floating caption');
     assert.equal(canvas.style.cursor, 'pointer');
     await pointer(trayCenter, ['pointerdown', 'pointerup']);
     assert.equal(useParty.getState().selected, 'demons', 'clicking a tray opens only that station');
