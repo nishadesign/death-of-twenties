@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.DS_Store
+test-results/
+*.tsbuildinfo
+__pycache__/
+.handoffs/context-transfers/
+
+# Local chat context, presentation workspace, and machine-specific configuration.
+/AGENTS.md
+/HANDOFF.md
+/docs/handoffs/
+/skills/
+/presentation/
+/.codex/
+/.agents/
+.env
+.env.*
+!.env.example
+*.log
