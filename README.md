@@ -1,0 +1,91 @@
+# Death of 20s
+
+A browser-based, illustrated party venue and deterministic crowd simulation, built from the supplied venue sketch. React, TypeScript, Canvas 2D, Tailwind CSS, Zustand and Vite. No backend or external services.
+
+## Run
+
+```sh
+npm install
+npm run dev
+```
+
+`npm run build` type-checks and builds production assets. `npm test` checks reproducibility, obstacle avoidance, free-flowing station visits, arrivals, and geometry. Open the Vite URL printed in the terminal.
+
+## GitHub Pages
+
+Repository: [nishadesign/death-of-twenties](https://github.com/nishadesign/death-of-twenties). The deployed site is configured for [nishadesign.github.io/death-of-twenties/](https://nishadesign.github.io/death-of-twenties/).
+
+Source code lives on `main`. GitHub Pages publishes the built site from the root of the `gh-pages` branch. After committing and pushing source changes to `main`, run the deployment command below. It runs the tests, builds the static app, and pushes `dist/` to `gh-pages`; GitHub then updates the live site.
+
+```sh
+npm ci
+npm run deploy
+```
+
+The deployment command requires GitHub push access to the `origin` remote. To build without publishing, run `npm run build:pages`. The Pages build uses `/death-of-twenties/` as its base URL. Public images and the home link use `assetUrl()` so they resolve inside that path. `npm run dev` and `npm run build` continue to use `/` for local development. Set the repository path in `vite.config.ts` if the repository is renamed. Use Node.js 22 or newer.
+
+## Use
+
+- Guests move freely between stations and mingling. An open spot is used immediately; if it is occupied, they explore another station or socialize. The Pulse shows Moving, Mingling and At stations, and station rows show only the guests currently there. Waiting states, queue markers, patience controls and wait-time metrics have been removed.
+- The opening view is paused at **7:30 PM**, before guests arrive, with a maximum of 30 invited. The clock runs to **11:30 PM**. Start begins the night; Reset replays the same seed from the beginning; Randomize creates a new seed. Playback defaults to **60 seconds for the entire night**, with **45s, 60s and 90s** controls (320×, 240× and 160× respectively). Changing playback length preserves the current party time. Click a timeline moment to replay deterministically to that time and pause there. Jumping uses the current settings, rather than replaying a history of mid-run setting changes.
+- **Arrival style → Random mix** creates a shuffled plan of couples and single friends, with only one- or two-person arrival groups. Each couple shares an arrival time; separate friends roll in at varied times, mostly by the selected arrival window. The panel shows the number of couples and single friends. Selecting this option or pressing **Shuffle arrivals** generates a fresh seed and restarts at 7:30 PM. Reset and timeline jumps replay that same plan; the main Randomize button also reshuffles it.
+- Change headcount (5–30, your maximum guest list) during a run. Additional guests are scheduled at the entrance shortly after the change; reducing the headcount removes the excess agents immediately. Headcount changes and charades moves alter the current run; other assumptions reset it.
+- Venue mode hides all guests and analytical overlays. Live mode shows minimal top-down guests. Heatmap shows current relative local density. Zoom buttons and dragging support closer inspection. Ctrl/Cmd + wheel also zooms.
+- **Vibes** in the right panel controls the two revolving lights in the upper-right and lower-left corners, as confirmed by the host. The lower-left fixture sits at the left end of the food-table wall, inside the party floor. Switch them on/off, adjust Glow from 0–100%, or pause/resume rotation. They start on at 65% and sweep warm gold, muted violet and blue-green light across the room. Lighting runs independently of guest playback and speed; reduced-motion preferences keep it static. Heatmap hides the lights so density colors remain readable. These are decorative fixtures, not additional stations or guest obstacles.
+- Select a station on the canvas or from the accessible station list to explore its design story. A centered modal opens over the venue, with the selected station highlighted behind it. The camera and insights sidebar stay in place. Previous/Next changes the story between all nine stations; Back to Venue, Close, a backdrop click, or Escape dismisses the modal. Guest count, elapsed time, and playback are preserved; a running simulation keeps running. Toggle counts or change charades between three predefined positions and off.
+- The interface goes straight from the party masthead to the venue. The extra introductory heading and attendance-comparison action were removed at the host’s request; guest controls, live playback, heatmap and station stories remain.
+- The right panel uses 14–15 px controls and station names, 12–13 px supporting labels, stronger text contrast and a wider desktop column. Sections scroll within the panel on desktop.
+- **Show station titles**, above the right-panel station list, starts off. It shows/hides the host’s custom food-and-drink station titles on the venue canvas. Actual dish names and cocktail descriptions are no longer rendered, even when enabled. Numbered markers, food illustrations, photo-booth and Charades labels remain visible; the sidebar and story dialogs retain names for navigation. It works in Venue, Live and Heatmap without resetting the simulation or camera.
+
+## Station names
+
+The original five food stations are **Blast from past** (pani puri), **It's Complicated** (papdi chaat), **Side Eye** (caprese), **Love Handles** (shahi tukda), and **Emotional Baggage** (hummus & pita). The selfie booth is **Department of Questionable Choices**.
+
+**Last Drop** (blue cocktails) and **Too hot to handle** (spicy margarita) share the existing cocktail bar and its available spots. Charades remains **Act Your Age… Or Don’t!**. The host’s later addition, **The Final Supper** (pizza), sits on the vertical kitchen slab, perpendicular to the horizontal cocktail section extending to its right, facing the party area. This reflects the host’s latest placement correction. There are now **nine physical simulation stations**; the two drinks remain menu offerings at one bar. Pizza starts with an assumed two-person capacity and 1–2 minute visit length. Pizza and cocktails are separate stations on one connected L-shaped slab: drinks serve from the horizontal lower edge and pizza from the vertical left edge. Station spots follow those party-facing approaches. The slab joins the fixed kitchen counter and remains an obstacle; the kitchen interior stays inaccessible. Their approaches and the nearby hummus approach are walkable.
+
+## Geometry and assumptions
+
+The host’s screenshot correction places a continuous house wall behind the **lower edge** of the shared food table, with the glow light in its left corner. The solid, capped `food-wall` footprint is `{x:18,y:510,w:514,h:18}`. The shared table is `{x:242,y:385,w:278,h:125}`, with its lower edge flush against the wall; there is no passage behind it. The lower-left area beyond this wall is outside the house, not accessible party floor. The photo booth sits in a recessed nook with solid left, right and back walls; an opening to the right of the food wall connects it to the hall. Side Eye and Emotional Baggage serve from above the table, and Love Handles from its right edge. Station spots, story bounds and lighting clipping follow the corrected geometry. The table and station numbering remain unchanged.
+
+The host requested a smaller hall and clearer guests. The current room fits within **864 × 606 relative units**, with a stepped lower edge around the photo-booth nook. That bounding rectangle is about **23% smaller** than the earlier 964 × 706 illustration; the lower-left cutout further reduces the floor area. The shared table sits 82 units higher and the lower rooms sit 100 units higher; the bar and entrance move up 60 units, with the right edge 100 units closer. Food counters, sofas and the shared table retain their sizes; the booth is recessed into the lower house nook. Entry spawns, station points, social gathering points, density zones, light positions and camera fitting follow the compact layout. Guest symbols are **55% larger**, with a thin dark outline for separation. These are layout adjustments from the host’s feedback, not measured physical dimensions.
+
+The host’s latest correction places the first two food stations at 90°: **Blast from past** is horizontal on the right beside the top sofa, and **It's Complicated** runs vertically down its left side. Their illustration, obstacles, station points use this corrected L-shaped arrangement. The original sketch remains available as a historical reference.
+
+`src/simulation/venue.ts` is the single geometry source: room, obstacles, station access points, entry, and assumed charades locations. Positions are **relative drawing units**, not meters. Physical obstacles include the closed patio, kitchen/service counter, sofas, single shared table, house walls and lower-left exterior cutout, photo backdrop and booth sides, and restroom. The patio has no confirmed entrance and is excluded. The host confirmed that the kitchen was unavailable: its service-area illustration is removed and the space appears as a dark “NO ACCESS” area, excluded from routing and lighting. The cocktail bar remains on the party-facing side, with its menu labels outside the blocked space. The restroom doorway is unconfirmed; only its approach is simulated. Confirm actual access before using the layout for planning.
+
+The venue illustration follows the supplied sketch and simplified layout, with recreated text signs in the requested vintage gothic palette. Station stories now include the host’s supplied banners, guides, inspiration screenshot and party photographs. These assets are shown as supplied; the canvas remains an illustration. The original hand sketch is available in the About dialog and every station story.
+
+## Simulation
+
+- `CrowdSimulation.ts`: rendering-independent fixed 0.5-second steps; seeded Mulberry32 randomness; weighted preferences, repeat visits, destination choice, social groups, immediate station visits and changing dessert demand.
+- `pathfinding.ts`: A* over a radius-inflated walkability grid, visible grid anchors, exact segment checks against inflated furniture, safe path simplification and cached routes keyed by the exact destination. Local separation and slowdown handle nearby guests, with a sidestep when movement is blocked.
+- Guests mostly arrive in pairs, with shared arrival/departure times and walking speeds. The default rolling-arrival pattern brings early guests within a few minutes of opening, most by **9 PM**, and a few later. Small groups and individuals also appear. An arrival drink comes before the first food visit; guests chat when a spot is occupied and retry without lining up. After that they mingle, take photos, eat and return for drinks, with gaps between repeat food/drink visits. Nearby friends share photo sessions immediately.
+- **Charades runs from 10:00–10:45 PM.** Most guests gather; up to ten play, with others watching around the group. Performers rotate every 3–5 minutes. The scheduled end releases the group back to mingling. Moving or disabling the activity remains available.
+- Pairs share departure times between **11:15 and 11:28 PM**, allowing time to walk to the entrance before the **11:30 PM** close. Departed guests leave the canvas, heatmap and current occupancy counts. Arrival and departure totals remain visible.
+- Starting supplies are explicitly illustrative: **45 portions at each of six food stations and 120 drinks at the shared bar**. Edit them in About → Simulation assumptions. A completed visit takes one portion or drink; finite supplies cannot go below zero and do not refill automatically. Canvas food pieces disappear proportionally as portions are taken, while guests carry small cups and plates after visits. Venue-only mode shows the fully set-up room. These quantities are not asserted as the host’s real serving counts.
+- `VenueRenderer.ts`: flat Canvas illustration, furniture, food, avatars and heatmap. Simulation time does not depend on rendering frame rate. Movement interpolation is visual only.
+- `ScenarioComparison.tsx` and `scenario.worker.ts`: retained for optional analysis, but the comparison feature is no longer mounted or exposed in the simplified interface.
+
+## Metrics
+
+The clock, current attendance, cumulative arrivals/departures, drinks poured and food portions taken follow the same simulation state. Station rows show remaining illustrative stock. Station utilization is occupied spots divided by available place-time since simulation start. There are no wait-time or queue metrics. Peak density is the maximum local guest count within 55 drawing units. Zone thresholds are configurable heuristics in `CrowdSimulation.ts`; zone counts overlap and cannot be added. Congested minutes are average time per arrived guest (including those who have left) inside any zone over threshold. Circulation efficiency is movement time without local crowding divided by total movement time. A comparison records the cocktail zone as congested when it exceeded its threshold for at least 60 simulated seconds.
+
+This is an exploratory visualization, **not a validated crowd-safety model**. It does not establish legal occupancy, fire-code compliance, precise physical capacity, or evacuation safety. Station visit and local collision rules are lightweight approximations. Measured dimensions and verified doorways would improve fidelity.
+
+## Embedded station stories
+
+Stories stay inside Venue, Live Simulation and Heatmap; there is no separate route or gallery mode. Stories open in a centered, scrollable modal on desktop and smaller screens, over the existing venue. Opening, navigating and closing stories never changes camera zoom or pan. The native dialog contains keyboard focus while open; the image lightbox can open on top of it. Keyboard users can reach canvas station buttons and the existing station list. Touch indicators mark the station entry points.
+
+- `src/stories/manifest.ts`: optional content keyed by existing station IDs. Missing images use explicit placeholders. The photo-booth drape revision is documented by the host; no additional prompts, outcomes or reflections are invented.
+- `src/stories/types.ts`: image, iteration and station-story types. Story content is independent of the simulation engine.
+- `src/rendering/camera.ts`: shared projection math for the existing manual zoom and pan controls.
+- `src/rendering/stationGeometry.ts`: presentation bounds derived from existing obstacles and serving points; no venue geometry is changed.
+- `StationStoryPanel`, `PlannedBuiltComparison`, `StoryImageCard`, `ImageLightbox` and `DesignProcessTimeline`: reusable story components. The optional before/after slider is enabled only for an explicitly paired planned/built composition.
+
+See `public/stories/README.md` for the asset inventory and manifest workflow. The archive contains **21 unique supplied images** from 22 attachments, with one identical cocktail-bar photograph stored only once. Seven station stories now have images: pani puri, papdi chaat, hummus, caprese, dessert, the cocktail bar and the photo booth. Shared photos reuse the same file across stories. Numbered image controls switch within Planned or Built, which initially show the first available image; selecting an image opens the full-screen viewer.
+
+The hummus Planned image is labeled as an inspiration screenshot. Alternate “Too Hot to Handle” artwork belongs to pani puri, independently of the similarly named cocktail. The photo booth includes both supplied signs and all eight confirmed photographs; its documented burgundy-to-black drape revision still has missing moodboard placeholders. Chaat, caprese and dessert lack separate planned artwork; pizza and charades still lack both artwork and party photos. No additional design chronology, prompts or reflections are inferred. The original venue sketch remains in every story’s reference section.
+
+`npm test` includes engine regressions, manual-camera preservation checks, content checks and DOM interaction tests using jsdom with an offline Canvas implementation. `node --import tsx scripts/render-stories.ts` exports nine selected-station Canvas views without camera movement to `test-results/`. These checks do not substitute for browser layout, touch-device, or live accessibility verification. Agent browser access to localhost was denied; live browser verification remains outstanding.
+
+`src/simulation/night.ts` holds the clock and schedule boundaries; `NightTimeline.tsx` provides accessible time-jump controls. `node --import tsx scripts/render-night.ts` exports offline Canvas snapshots at 7:30, 9:00, 10:15 and 11:30 PM to `test-results/night-*.png`. The 38-test suite covers paired arrivals, the drinks-then-food sequence, finite consumption, exact charades boundaries, real doorway departures, deterministic time jumps, corner routing and existing controls/stories.
