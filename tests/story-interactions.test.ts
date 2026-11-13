@@ -11,6 +11,8 @@ import { getStationStory } from '../src/stories/manifest';
 import { STATIONS } from '../src/simulation/venue';
 import { useParty } from '../src/store';
 import { createHash } from 'node:crypto';
+import { OVERVIEW, worldToScreen } from '../src/rendering/camera';
+import { stationBounds } from '../src/rendering/stationGeometry';
 
 // DOM-level interaction checks only: no browser, server or network requests.
 function environment(mobile = false) {
@@ -146,12 +148,24 @@ test('canvas clicks focus a story, playback continues, and nested image dismissa
     const simulation = useParty.getState().simulation;
     await act(async () => env.root.render(createElement(App))); await env.flush();
     const canvas = document.querySelector('canvas')!;
-    // Project the photo station into the initial 390 x 240 overview.
-    const scale = Math.min((390 - 36) / 1000, (240 - 24) / 750);
-    const x = 390 / 2 + (657 - 500) * scale, y = 240 / 2 + (666 - 375) * scale;
-    await act(async () => {
-      for (const type of ['pointerdown', 'pointerup']) canvas.dispatchEvent(new env.dom.window.MouseEvent(type, { bubbles: true, clientX: x, clientY: y, button: 0 }));
-    });
+    const pointer = async (point: { x: number; y: number }, types: string[]) => {
+      const screen = worldToScreen(point, OVERVIEW, { width: 390, height: 240 });
+      await act(async () => {
+        for (const type of types) canvas.dispatchEvent(new env.dom.window.MouseEvent(type, { bubbles: true, clientX: screen.x, clientY: screen.y, button: 0 }));
+      });
+    };
+    await pointer({ x: 377, y: 427 }, ['pointermove', 'pointerdown', 'pointerup']);
+    assert.equal(useParty.getState().selected, null, 'the gap between food trays does not open a story');
+    assert.equal(document.querySelector('.station-hover-tip'), null);
+    const tray = stationBounds(simulation.stations.find(station => station.id === 'demons')!);
+    const trayCenter = { x: tray.x + tray.w / 2, y: tray.y + tray.h / 2 };
+    await pointer(trayCenter, ['pointermove']);
+    assert.ok(document.querySelector('.station-hover-tip'));
+    assert.equal(canvas.style.cursor, 'pointer');
+    await pointer(trayCenter, ['pointerdown', 'pointerup']);
+    assert.equal(useParty.getState().selected, 'demons', 'clicking a tray opens only that station');
+    await env.click('[aria-label="Close station story"]');
+    await pointer(simulation.stations.find(station => station.id === 'photo')!.point, ['pointerdown', 'pointerup']);
     assert.equal(useParty.getState().selected, 'photo');
     assert.equal(document.body.style.overflow, 'hidden');
     await env.flush(performance.now() + 700);

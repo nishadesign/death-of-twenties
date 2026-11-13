@@ -2,7 +2,7 @@ import { isInRoom, type CrowdSimulation } from '../simulation/CrowdSimulation';
 import { CHARADES_START, CHARADES_END } from '../simulation/night';
 import type { Guest, Point, Rect, StationId } from '../simulation/types';
 import { STATIONS, VENUE } from '../simulation/venue';
-import { containsPoint, stationBounds } from './stationGeometry';
+import { stationContainsPoint, stationBounds, stationMarker } from './stationGeometry';
 import { drawPartyLights, type VibeSettings } from './PartyLights';
 
 const C = { cream: '#e3d2af', gold: '#b39361', dim: '#8d8069', wall: '#b49b73', wood: '#47372d', floor: '#292724' };
@@ -106,7 +106,6 @@ export function drawVenue(ctx: CanvasRenderingContext2D, sim: CrowdSimulation, o
     }
     lines.forEach((text, lineIndex) => label(ctx, text, x, y + lineIndex * 10, 10, C.cream, true));
   });
-  badge(ctx, 8, bar.x - 12, bar.y + 15);
 
   if (options.showStationTitles) {
     round(ctx, pizza.x + 5, pizza.y + 5, pizza.w - 10, 41, 2, '#30251f', '#a58455');
@@ -123,7 +122,6 @@ export function drawVenue(ctx: CanvasRenderingContext2D, sim: CrowdSimulation, o
       circle(ctx, x + Math.cos(angle + .5) * 7, y + Math.sin(angle + .5) * 7, 2, slice % 2 ? '#71815b' : '#a95e46');
     }
   }
-  badge(ctx, STATIONS.findIndex(station => station.id === 'pizza') + 1, pizza.x - 23, pizza.y + 40);
   sofa(ctx, 324, 38, 177); sofa(ctx, 510, 38, 156);
   plant(ctx, 292, 40, .65); candle(ctx, 688, 72);
 
@@ -154,8 +152,6 @@ export function drawVenue(ctx: CanvasRenderingContext2D, sim: CrowdSimulation, o
     for (let k = 0; k < 6; k++) { const a = k * 2.4; circle(ctx, x + Math.cos(a) * 6, y + Math.sin(a) * 6, 2.5, k % 2 ? '#d6cbb3' : '#738064'); }
   }
   ctx.restore();
-  badge(ctx, 1, puri.x + puri.w / 2, puri.y - 18);
-  badge(ctx, 2, chaat.x + chaat.w / 2, chaat.y + chaat.h + 18);
   if (options.showStationTitles) {
     const [chaatFirst, ...chaatRest] = STATIONS.find(station => station.id === 'chaat')!.name.split(' ');
     label(ctx, chaatFirst, chaat.x + chaat.w + 68, chaat.y + 58, 19, C.cream, true);
@@ -169,17 +165,21 @@ export function drawVenue(ctx: CanvasRenderingContext2D, sim: CrowdSimulation, o
   ctx.save(); ctx.translate(table.x - 262, table.y - 467);
   round(ctx, 262, 467, 278, 125, 8, '#574536', '#b39a73'); round(ctx, 270, 475, 262, 109, 4, '#695640', '#937c5a');
   for (let x = 279; x < 535; x += 12) line(ctx, [x, 480, x, 580], '#715d46', .5);
-  platter(ctx, 283, 483, 96, 49); platter(ctx, 423, 483, 96, 49);
+  // Platter drawing and station picking use the same individual tray footprints.
+  for (const id of ['demons', 'hummus', 'dessert']) {
+    const tray = stationBounds(sim.stations.find(station => station.id === id)!);
+    platter(ctx, tray.x - table.x + 262, tray.y - table.y + 467, tray.w, tray.h);
+  }
   for (let i = 0; i < foodItems('demons', 6); i++) { const x = 299 + i % 3 * 28, y = 497 + Math.floor(i / 3) * 22; circle(ctx, x, y, 8, '#96574b'); circle(ctx, x, y, 5.8, '#d6d1ac'); circle(ctx, x, y, 2.8, '#5a6750'); circle(ctx, x, y, 1.3, '#272723'); }
   circle(ctx, 449, 508, 18, '#6b5b43', '#e1caa1');
   ctx.save(); ctx.beginPath(); ctx.arc(449, 508, 18 * Math.sqrt(foodFraction('hummus')), 0, Math.PI * 2); ctx.clip();
   circle(ctx, 449, 508, 17, '#d3b88a'); ctx.beginPath(); ctx.arc(449, 508, 12, 0, Math.PI * 1.7); ctx.strokeStyle = '#b2915a'; ctx.lineWidth = 2; ctx.stroke(); circle(ctx, 449, 508, 3.5, '#797947'); ctx.restore();
   for (let i = 0; i < foodItems('hummus', 4); i++) { ctx.beginPath(); ctx.moveTo(475 + i * 8, 495); ctx.lineTo(470 + i * 8, 521); ctx.lineTo(488 + i * 8, 517); ctx.closePath(); ctx.fillStyle = i % 2 ? '#cfb580' : '#bfa06c'; ctx.fill(); ctx.strokeStyle = '#8c744c'; ctx.stroke(); }
-  platter(ctx, 340, 551, 122, 25); for (let i = 0; i < foodItems('dessert', 5); i++) { round(ctx, 348 + i * 22, 556, 16, 15, 2, '#cfa46a'); circle(ctx, 356 + i * 22, 562, 2, '#74805b'); }
+  for (let i = 0; i < foodItems('dessert', 5); i++) { round(ctx, 348 + i * 22, 556, 16, 15, 2, '#cfa46a'); circle(ctx, 356 + i * 22, 562, 2, '#74805b'); }
   if (options.showStationTitles) {
     label(ctx, STATIONS.find(station => station.id === 'demons')!.name.toUpperCase(), 333, 542, 8.5); label(ctx, STATIONS.find(station => station.id === 'hummus')!.name.toUpperCase(), 471, 542, 8.5); label(ctx, STATIONS.find(station => station.id === 'dessert')!.name.toUpperCase(), 401, 585, 8.2);
   }
-  badge(ctx, 4, 275, 478); badge(ctx, 3, 527, 478); badge(ctx, 5, 325, 564); candle(ctx, 399, 506);
+  candle(ctx, 399, 506);
   ctx.restore();
 
   // A three-sided house alcove, reached through the opening to the right of the food wall.
@@ -203,7 +203,7 @@ export function drawVenue(ctx: CanvasRenderingContext2D, sim: CrowdSimulation, o
   round(ctx, 96, 2, 69, 18, 1, '#25211e', '#ad9875'); label(ctx, 'GUILTY OF 30', boothWidth / 2, 11, 8, '#c4b28e');
   line(ctx, [boothWidth / 2, 28, boothWidth / 2 - 12, 42, boothWidth / 2, 28, boothWidth / 2 + 12, 42], '#c2ad86', 1.5);
   round(ctx, boothWidth / 2 - 10, 21, 21, 14, 3, '#262728', '#a5967b'); circle(ctx, boothWidth / 2, 28, 4, '#697775', '#b5aa8a');
-  candle(ctx, 25, booth.h - 30); candle(ctx, boothWidth - 25, booth.h - 30); badge(ctx, 6, -9, 14);
+  candle(ctx, 25, booth.h - 30); candle(ctx, boothWidth - 25, booth.h - 30);
   ctx.restore();
   const restroom = VENUE.obstacles.find(obstacle => obstacle.id === 'restroom')!;
   round(ctx, restroom.x, restroom.y, restroom.w, restroom.h, 0, '#33312b', '#aa9573'); label(ctx, 'RESTROOM', restroom.x + restroom.w / 2, restroom.y + restroom.h / 2, 10, '#c6b99c');
@@ -217,8 +217,13 @@ export function drawVenue(ctx: CanvasRenderingContext2D, sim: CrowdSimulation, o
     ctx.beginPath(); ctx.arc(p.x, p.y, 74, 0, Math.PI * 2); ctx.setLineDash([3, 6]); ctx.strokeStyle = '#796b4d'; ctx.lineWidth = 1; ctx.stroke(); ctx.setLineDash([]);
     ctx.globalAlpha = .15; skull(ctx, p.x, p.y - 26, .8); ctx.globalAlpha = 1;
     label(ctx, 'Act your age…', p.x, p.y + 1, 22, '#c5b48d', true); label(ctx, 'or don’t!', p.x, p.y + 24, 22, '#c5b48d', true);
-    label(ctx, sim.elapsed >= CHARADES_END ? 'CHARADES · FINISHED' : sim.elapsed >= CHARADES_START ? 'CHARADES · GAME ON' : 'CHARADES · 10:00–10:45 PM', p.x, p.y + 47, 6.8, '#a4916c'); badge(ctx, 7, p.x, p.y - 74);
+    label(ctx, sim.elapsed >= CHARADES_END ? 'CHARADES · FINISHED' : sim.elapsed >= CHARADES_START ? 'CHARADES · GAME ON' : 'CHARADES · 10:00–10:45 PM', p.x, p.y + 47, 6.8, '#a4916c');
   }
+  sim.stations.forEach((station, index) => {
+    if (station.id === 'charades' && sim.settings.charades === 'off') return;
+    const marker = stationMarker(station);
+    badge(ctx, index + 1, marker.x, marker.y);
+  });
   // Boundary with the entrance intentionally open on the lower right.
   roomPath(ctx); ctx.strokeStyle = C.wall; ctx.lineWidth = 3; ctx.stroke();
   const entry = VENUE.entry;
@@ -243,14 +248,14 @@ export function drawVenue(ctx: CanvasRenderingContext2D, sim: CrowdSimulation, o
   if (options.selected) {
     const bounds = stationBounds(sim.stations.find(s => s.id === options.selected)!);
     ctx.save(); ctx.beginPath(); ctx.rect(-10000, -10000, 20000, 20000);
-    ctx.roundRect(bounds.x - 8, bounds.y - 8, bounds.w + 16, bounds.h + 16, 10);
+    ctx.roundRect(bounds.x, bounds.y, bounds.w, bounds.h, bounds.radius);
     ctx.fillStyle = 'rgba(17,16,20,.48)'; ctx.fill('evenodd');
-    round(ctx, bounds.x - 8, bounds.y - 8, bounds.w + 16, bounds.h + 16, 10, 'rgba(196,154,87,.035)', '#c49a57');
+    round(ctx, bounds.x, bounds.y, bounds.w, bounds.h, bounds.radius, 'rgba(196,154,87,.035)', '#c49a57');
     ctx.restore();
   }
   if (options.hovered && options.hovered !== options.selected) {
     const bounds = stationBounds(sim.stations.find(s => s.id === options.hovered)!);
-    round(ctx, bounds.x - 4, bounds.y - 4, bounds.w + 8, bounds.h + 8, 7, 'rgba(196,154,87,.08)', '#b39361');
+    round(ctx, bounds.x, bounds.y, bounds.w, bounds.h, bounds.radius, 'rgba(196,154,87,.08)', '#d9b97f');
   }
 }
 function drawGuest(ctx: CanvasRenderingContext2D, g: Guest, options: ViewOptions, elapsed: number) {
@@ -283,8 +288,5 @@ function drawHeatmap(ctx: CanvasRenderingContext2D, sim: CrowdSimulation) {
   }
 }
 export function stationAt(point: Point, sim: CrowdSimulation): StationId | null {
-  let best: StationId | null = null, dist = 64;
-  for (const s of sim.stations) { if (s.id === 'charades' && sim.settings.charades === 'off') continue; const d = Math.hypot(point.x - s.point.x, point.y - s.point.y); if (d < dist) { dist = d; best = s.id; } }
-  for (const o of VENUE.obstacles) if (containsPoint(o, point)) { if (o.id === 'table') return point.y > o.y + o.h * .65 ? 'dessert' : point.x < o.x + o.w / 2 ? 'demons' : 'hummus'; if (o.id.startsWith('booth-')) return 'photo'; if (STATIONS.some(s => s.id === o.id)) return o.id as StationId; }
-  return best ?? sim.stations.find(s => !(s.id === 'charades' && sim.settings.charades === 'off') && containsPoint(stationBounds(s), point))?.id ?? null;
+  return sim.stations.find(station => !(station.id === 'charades' && sim.settings.charades === 'off') && stationContainsPoint(station, point))?.id ?? null;
 }

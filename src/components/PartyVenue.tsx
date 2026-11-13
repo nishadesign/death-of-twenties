@@ -6,6 +6,7 @@ import { FIXED_STEP } from '../simulation/CrowdSimulation';
 import { STATIONS } from '../simulation/venue';
 import type { Point, StationId } from '../simulation/types';
 import { baseScale, OVERVIEW, screenToWorld, worldToScreen, type Camera } from '../rendering/camera';
+import { stationMarker } from '../rendering/stationGeometry';
 
 export default function PartyVenue() {
   const canvas = useRef<HTMLCanvasElement>(null), wrapper = useRef<HTMLDivElement>(null);
@@ -44,7 +45,7 @@ export default function PartyVenue() {
       drawVenue(ctx, state.simulation, { mode: state.mode, selected: state.selected, hovered: hovered.current, showCounts: state.showCounts, showStationTitles: state.showStationTitles, time: now, alpha: state.running ? accumulator / FIXED_STEP : 1, smooth, reducedMotion: motion.matches, vibes: state.vibes, lightTime });
       for (const station of state.simulation.stations) {
         const button = stationButtons.current.get(station.id); if (!button) continue;
-        const point = worldToScreen(station.point, camera, viewport);
+        const point = worldToScreen(stationMarker(station), camera, viewport);
         const offscreen = point.x < 12 || point.x > viewport.width - 12 || point.y < 12 || point.y > viewport.height - 12;
         button.style.transform = `translate(${point.x - 18}px, ${point.y - 18}px)`;
         button.style.visibility = offscreen ? 'hidden' : '';
