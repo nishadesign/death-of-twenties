@@ -166,3 +166,13 @@ html{scrollbar-gutter:stable}
 .station-tooltip-rule{display:flex;align-items:center;justify-content:center;gap:4px;font-size:8px;line-height:8px;color:#bb8247;margin-top:3px}
 .station-tooltip-rule i{width:22px;height:1px;background:linear-gradient(90deg,transparent,#c48b4c)}
 .station-tooltip-rule i:last-child{transform:rotate(180deg)}
+
+
+.side-panel .stations-section{align-self:start}
+.side-panel .stations-collapse-toggle{width:100%;min-height:32px;padding:0;margin:0;text-align:left}
+.side-panel .stations-collapse-toggle[aria-expanded=true]{margin-bottom:8px}
+.stations-heading-actions{display:flex;align-items:center;gap:12px}
+.stations-collapse-toggle svg{transition:transform .15s ease}
+.stations-collapse-toggle[aria-expanded=false] svg{transform:rotate(-90deg)}
+.stations-collapse-toggle:hover{color:var(--cream)}
+#stations-content[hidden]{display:none}

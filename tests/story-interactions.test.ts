@@ -240,6 +240,22 @@ test('the party controls, insights and assumptions expose no waiting or queue UI
     await act(async () => env.root.render(createElement(App)));
     assert.equal(document.querySelector('.pulse-section, .night-consumption'), null);
     assert.doesNotMatch(document.querySelector('.side-panel')!.textContent!, /THE PULSE|THE NIGHT SO FAR/);
+    const simulation = useParty.getState().simulation;
+    const stationsToggle = document.querySelector<HTMLButtonElement>('.stations-collapse-toggle')!;
+    const stationsContent = document.getElementById(stationsToggle.getAttribute('aria-controls')!)!;
+    assert.equal(stationsToggle.getAttribute('aria-expanded'), 'true');
+    await env.click('.stations-collapse-toggle');
+    assert.equal(stationsToggle.getAttribute('aria-expanded'), 'false');
+    assert.equal(stationsContent.hidden, true);
+    await act(async () => useParty.getState().publish());
+    await env.click('.canvas-story-button[data-station-id="puri"]');
+    assert.equal(useParty.getState().selected, 'puri', 'canvas stories work while the station list is collapsed');
+    await env.click('[aria-label="Close station story"]');
+    assert.equal(stationsContent.hidden, true, 'browsing a station preserves the collapsed state');
+    await env.click('.stations-collapse-toggle');
+    assert.equal(stationsToggle.getAttribute('aria-expanded'), 'true');
+    assert.equal(stationsContent.hidden, false);
+    assert.equal(useParty.getState().simulation, simulation);
     const check = () => {
       assert.doesNotMatch(document.body.textContent!, /waiting|queue|avg\. cumulative wait|AT \/ WAIT/i);
       for (const row of document.querySelectorAll('.station-row')) assert.doesNotMatch(row.getAttribute('aria-label')!, /wait|queue/i);
