@@ -71,15 +71,14 @@ test('every station has a compact gallery or one quiet empty state using supplie
     assert.equal(story.stationId, station.id);
     for (const image of images) if (image.src?.startsWith('/')) assert.ok(existsSync(resolve('public', image.src.slice(1))), `Missing asset: ${image.src}`);
     assert.equal(new Set(images.map(image => image.id)).size, images.length);
-    const gallery = renderToStaticMarkup(createElement(StationGallery, { story, onOpen: () => {} }));
-    if (images.every(image => image.src === null)) {
-      assert.match(gallery, /No photos added yet/); assert.doesNotMatch(gallery, /<img/);
-    } else {
-      assert.equal((gallery.match(/<img /g) || []).length, 1);
-      assert.match(gallery, /At the party/);
-      assert.doesNotMatch(gallery, /Image not yet supplied/);
+    for (const phase of ['Before', 'After'] as const) {
+      const phaseImages = phase === 'Before' ? story.plannedImages : story.builtImages;
+      const gallery = renderToStaticMarkup(createElement(StationGallery, { images: phaseImages, phase, onOpen: () => {} }));
+      const available = phaseImages.filter(image => image.src);
+      assert.equal((gallery.match(/<img /g) || []).length, available.length);
+      if (!available.length) assert.match(gallery, /No (before images|after photos) added yet/);
+      else assert.match(gallery, /aria-roledescription="carousel"/);
+      assert.doesNotMatch(gallery, /<figcaption|design-process|story-source-note|story-reference/);
     }
-    if (station.id === 'hummus') assert.match(gallery, /Inspiration/);
-    assert.doesNotMatch(gallery, /<figcaption|design-process|story-source-note|story-reference/);
   }
 });

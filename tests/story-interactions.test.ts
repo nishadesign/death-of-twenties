@@ -124,13 +124,23 @@ test('all nine stories open over the unchanged venue, preserve playback and came
     await env.click('[aria-label^="Next Station"]'); assert.equal(useParty.getState().selected, 'charades');
     await env.click('[aria-label^="Previous Station"]'); assert.equal(useParty.getState().selected, 'photo');
     assert.equal(document.querySelector('.design-process, .story-source-note, .story-reference, .planned-built'), null);
-    assert.equal(document.querySelectorAll('.station-story-modal img').length, 1, 'only one gallery image is shown');
-    await env.click('.gallery-collections button:last-child');
+    assert.equal(document.querySelectorAll('.station-story-modal img').length, 2, 'Before shows the two supplied booth designs');
+    assert.equal(document.querySelector('#station-before-tab')?.getAttribute('aria-selected'), 'true');
+    assert.ok(document.querySelector('.station-checklist'));
+    await env.click('#station-after-tab');
+    assert.equal(document.querySelectorAll('.station-story-modal img').length, 8, 'After shows only party photo tiles');
+    assert.equal(document.querySelector('.station-checklist'), null);
     await env.click('[aria-label="Next gallery image"]');
     await env.click('[aria-label^="Next Station"]');
-    assert.match(document.querySelector('.station-gallery-empty')!.textContent!, /No photos added yet/);
+    assert.match(document.querySelector('.station-gallery-empty')!.textContent!, /No before images added yet/);
     await env.click('[aria-label^="Previous Station"]');
-    assert.equal(document.querySelector('.gallery-navigation>span')?.textContent, '1 / 8', 'returning to a station resets to its first party photo');
+    assert.equal(document.querySelector('.gallery-navigation>span')?.textContent, '1 / 2', 'a new station opens on Before at the first tile');
+    assert.equal(document.querySelector('#station-before-tab')?.getAttribute('tabindex'), '0');
+    await act(async () => document.querySelector('#station-before-tab')!.dispatchEvent(new env.dom.window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })));
+    assert.equal(document.activeElement?.id, 'station-after-tab');
+    assert.equal(document.querySelector('#station-after-tab')?.getAttribute('aria-selected'), 'true');
+    await act(async () => document.querySelector('#station-after-tab')!.dispatchEvent(new env.dom.window.KeyboardEvent('keydown', { key: 'Home', bubbles: true })));
+    assert.equal(document.activeElement?.id, 'station-before-tab');
     await env.flush(performance.now() + 1000);
     assert.deepEqual(cameraSnapshot(), beforeCamera);
     await act(async () => document.querySelector('.station-story-modal')!.dispatchEvent(new env.dom.window.Event('cancel', { bubbles: true, cancelable: true })));
@@ -205,31 +215,42 @@ test('canvas clicks focus a story, playback continues, and nested image dismissa
   } finally { await env.cleanup(); }
 });
 
-test('the compact gallery switches collections, skips missing assets and handles broken images', async () => {
+test('the tile carousel navigates supplied images, skips missing assets and handles broken images', async () => {
   const env = environment();
   try {
     const story = getStationStory(STATIONS[0]);
     story.plannedImages = [{ id: 'missing', src: null, alt: 'Missing moodboard' }, { id: 'p1', src: '/test-1.jpg', alt: 'Test concept 1' }, { id: 'p2', src: '/test-2.jpg', alt: 'Test concept 2' }];
     story.builtImages = [{ id: 'b1', src: '/test-built.jpg', alt: 'Test built image' }];
     let opened = '';
-    await act(async () => env.root.render(createElement(StationGallery, { story, onOpen: image => { opened = image.id; } })));
+    await act(async () => env.root.render(createElement(StationGallery, { key: 'after', images: story.builtImages, phase: 'After', onOpen: image => { opened = image.id; } })));
     await env.click('[aria-label="Enlarge Test built image"]'); assert.equal(opened, 'b1');
     assert.equal(document.querySelector('.gallery-navigation'), null, 'one image needs no paging controls');
-    await env.click('.gallery-collections button:last-child');
+    await act(async () => env.root.render(createElement(StationGallery, { key: 'before', images: story.plannedImages, phase: 'Before', onOpen: image => { opened = image.id; } })));
     await env.click('[aria-label="Enlarge Test concept 1"]'); assert.equal(opened, 'p1');
     assert.equal(document.querySelector('.gallery-navigation>span')?.textContent, '1 / 2');
     await env.click('[aria-label="Next gallery image"]');
     assert.ok(document.querySelector('[aria-label="Enlarge Test concept 2"]'));
-    await env.click('[aria-label="Next gallery image"]');
-    assert.ok(document.querySelector('[aria-label="Enlarge Test concept 1"]'), 'paging wraps without missing placeholders');
+    assert.equal(document.querySelector<HTMLInputElement>('[aria-label="Next gallery image"]')!.disabled, true, 'the last tile stops forward navigation');
     await env.click('[aria-label="Previous gallery image"]');
-    assert.ok(document.querySelector('[aria-label="Enlarge Test concept 2"]'));
-    assert.equal(document.querySelectorAll('img').length, 1);
+    assert.equal(document.querySelector('.gallery-navigation>span')?.textContent, '1 / 2');
+    assert.equal(document.querySelectorAll('img').length, 2);
+    assert.equal(document.querySelectorAll('[aria-roledescription="slide"]').length, 2);
+    const rail = document.querySelector<HTMLElement>('.gallery-rail')!;
+    Object.defineProperty(rail, 'clientWidth', { value: 600, configurable: true });
+    document.querySelectorAll<HTMLElement>('.gallery-tile').forEach((tile, i) => {
+      Object.defineProperty(tile, 'offsetLeft', { value: i * 372, configurable: true });
+      Object.defineProperty(tile, 'offsetWidth', { value: 360, configurable: true });
+    });
+    await act(async () => { rail.scrollLeft = 132; rail.dispatchEvent(new env.dom.window.Event('scroll')); });
+    assert.equal(document.querySelector('.gallery-navigation>span')?.textContent, '2 / 2', 'swiping the rail updates the active tile');
+    await act(async () => rail.dispatchEvent(new env.dom.window.KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true })));
+    assert.equal(document.querySelector('.gallery-navigation>span')?.textContent, '1 / 2');
+    assert.equal(document.activeElement, document.querySelector('[aria-label="Enlarge Test concept 1"]'));
     assert.equal(document.querySelector('figcaption'), null, 'long captions stay in the full image viewer');
     await act(async () => document.querySelector('img')!.dispatchEvent(new env.dom.window.Event('error')));
-    assert.match(document.body.textContent!, /Image unavailable/); assert.equal(document.querySelector('.story-image-open'), null);
-    await env.click('.gallery-collections button:first-child');
-    assert.ok(document.querySelector('[aria-label="Enlarge Test built image"]'), 'a failed image does not break the other collection');
+    assert.match(document.body.textContent!, /Image unavailable/);
+    assert.equal(document.querySelector('[aria-label="Enlarge Test concept 1"]'), null);
+    await env.click('[aria-label="Enlarge Test concept 2"]'); assert.equal(opened, 'p2', 'a failed tile does not break the others');
   } finally { await env.cleanup(); }
 });
 
@@ -326,15 +347,19 @@ test('preparation checkmarks persist across stations, resets and a fresh app mou
     await act(async () => env.root.render(createElement(App)));
     await env.click('.station-row[data-station-id="puri"]');
     const before = useParty.getState().simulation;
-    assert.equal(document.querySelector<HTMLDetailsElement>('.station-checklist')?.open, false);
-    await env.click('.station-checklist summary');
+    assert.equal(document.querySelector('#station-before-tab')?.getAttribute('aria-selected'), 'true');
+    assert.ok(document.querySelector('.station-gallery')!.compareDocumentPosition(document.querySelector('.station-checklist')!) & env.dom.window.Node.DOCUMENT_POSITION_FOLLOWING, 'the checklist follows the Before carousel');
     assert.equal(document.querySelectorAll('.station-checklist input[type="checkbox"]').length, 16);
     await env.click('input[value="puri-shells"]');
     assert.equal(document.querySelector('.checklist-progress')?.textContent, '1 / 16 done');
     assert.deepEqual(JSON.parse(env.dom.window.localStorage.getItem(CHECKLIST_STORAGE_KEY)!), ['puri-shells']);
+    await env.click('#station-after-tab');
+    assert.equal(document.querySelector('.station-checklist'), null);
+    assert.equal(document.querySelectorAll('.gallery-tile').length, 3);
+    await env.click('#station-before-tab');
+    assert.equal(document.querySelector<HTMLInputElement>('input[value="puri-shells"]')!.checked, true, 'changing tabs preserves checkmarks');
     await env.click('[aria-label="Close station story"]');
     await env.click('.station-row[data-station-id="bar"]');
-    await env.click('.station-checklist summary');
     assert.equal(document.querySelectorAll('.checklist-group').length, 2);
     assert.equal(document.querySelectorAll('.station-checklist input').length, 25);
     assert.equal(document.querySelector<HTMLInputElement>('input[value="margarita-tequila"]')!.checked, false);
@@ -345,12 +370,10 @@ test('preparation checkmarks persist across stations, resets and a fresh app mou
     await env.click('[aria-label="Close station story"]');
     await env.click('[aria-label="Reset simulation"]');
     await env.click('.station-row[data-station-id="puri"]');
-    await env.click('.station-checklist summary');
     assert.equal(document.querySelector<HTMLInputElement>('input[value="puri-shells"]')!.checked, true);
     // A fresh provider mount reads local storage, just as a page reload would.
     await act(async () => env.root.render(null));
     await act(async () => env.root.render(createElement(App)));
-    await env.click('.station-checklist summary');
     assert.equal(document.querySelector<HTMLInputElement>('input[value="puri-shells"]')!.checked, true);
     assert.match(document.querySelector('.checklist-save-note')!.textContent!, /Saved in this browser/);
     await env.click('input[value="puri-shells"]');
@@ -368,13 +391,11 @@ test('checklists remain usable for the current visit when browser storage is blo
     useParty.getState().reset(2030); useParty.getState().select(null);
     await act(async () => env.root.render(createElement(App)));
     await env.click('.station-row[data-station-id="pizza"]');
-    await env.click('.station-checklist summary');
     await env.click('input[value="final-supper-pizzas"]');
     assert.equal(document.querySelector('.checklist-progress')?.textContent, '1 / 8 done');
     assert.match(document.querySelector('.checklist-save-note')!.textContent!, /this visit only/);
     await env.click('[aria-label="Close station story"]');
     await env.click('.station-row[data-station-id="pizza"]');
-    await env.click('.station-checklist summary');
     assert.equal(document.querySelector<HTMLInputElement>('input[value="final-supper-pizzas"]')!.checked, true);
   } finally { await env.cleanup(); useParty.setState(previous); }
 });
