@@ -238,7 +238,8 @@ test('the party controls, insights and assumptions expose no waiting or queue UI
   try {
     useParty.getState().reset(2030); useParty.getState().select(null);
     await act(async () => env.root.render(createElement(App)));
-    assert.deepEqual([...document.querySelectorAll('.pulse-grid>div>span')].map(label => label.textContent), ['Moving', 'Mingling', 'At stations']);
+    assert.equal(document.querySelector('.pulse-section, .night-consumption'), null);
+    assert.doesNotMatch(document.querySelector('.side-panel')!.textContent!, /THE PULSE|THE NIGHT SO FAR/);
     const check = () => {
       assert.doesNotMatch(document.body.textContent!, /waiting|queue|avg\. cumulative wait|AT \/ WAIT/i);
       for (const row of document.querySelectorAll('.station-row')) assert.doesNotMatch(row.getAttribute('aria-label')!, /wait|queue/i);
