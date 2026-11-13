@@ -6,6 +6,7 @@ import { getStationStory } from '../stories/manifest';
 import type { StoryImage } from '../stories/types';
 import StationGallery from './StationGallery';
 import ImageLightbox from './ImageLightbox';
+import StationChecklist from './StationChecklist';
 
 export default function StationStoryPanel() {
   const selected = useParty(state => state.selected), select = useParty(state => state.select);
@@ -35,6 +36,7 @@ export default function StationStoryPanel() {
     <button className="icon-button story-close" aria-label="Close station story" onClick={() => select(null)}><X size={21}/></button>
     <div className="story-panel-scroll" ref={scroll}>
       <header className="story-heading"><h2 id="station-story-title" ref={title} tabIndex={-1}>{station.name}</h2><p>{station.subtitle}</p></header>
+      <StationChecklist key={`checklist-${station.id}`} stationId={station.id}/>
       <StationGallery key={station.id} story={story} onOpen={open}/>
     </div>
     <nav className="story-navigation" aria-label="Station stories"><button onClick={() => select(previous.id)} aria-label={`Previous Station: ${previous.name}`}><ArrowLeft size={16}/> Previous</button><span>{String(index + 1).padStart(2, '0')} / {String(STATIONS.length).padStart(2, '0')}</span><button onClick={() => select(next.id)} aria-label={`Next Station: ${next.name}`}>Next <ArrowRight size={16}/></button></nav>

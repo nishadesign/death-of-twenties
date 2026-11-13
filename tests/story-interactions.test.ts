@@ -12,10 +12,11 @@ import { useParty } from '../src/store';
 import { createHash } from 'node:crypto';
 import { OVERVIEW, worldToScreen } from '../src/rendering/camera';
 import { stationBounds } from '../src/rendering/stationGeometry';
+import { CHECKLIST_STORAGE_KEY } from '../src/components/ChecklistProgress';
 
 // DOM-level interaction checks only: no browser, server or network requests.
 function environment(mobile = false) {
-  const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>');
+  const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', { url: 'https://party.test/' });
   const win = dom.window;
   const frames = new Map<number, FrameRequestCallback>(); let frameId = 0;
   const previous = new Map<string, PropertyDescriptor | undefined>();
@@ -315,5 +316,65 @@ test('Random mix and Shuffle arrivals create fresh couples-and-singles plans', a
     assert.notEqual(JSON.stringify(useParty.getState().simulation.guests.map(g => [g.group, g.arrival])), first);
     assert.equal(useParty.getState().settings.arrival, 'random');
     assert.equal(useParty.getState().metrics.elapsed, 0);
+  } finally { await env.cleanup(); useParty.setState(previous); }
+});
+
+test('preparation checkmarks persist across stations, resets and a fresh app mount', async () => {
+  const env = environment(), previous = useParty.getState();
+  try {
+    useParty.getState().reset(2030); useParty.getState().select(null);
+    await act(async () => env.root.render(createElement(App)));
+    await env.click('.station-row[data-station-id="puri"]');
+    const before = useParty.getState().simulation;
+    assert.equal(document.querySelector<HTMLDetailsElement>('.station-checklist')?.open, false);
+    await env.click('.station-checklist summary');
+    assert.equal(document.querySelectorAll('.station-checklist input[type="checkbox"]').length, 16);
+    await env.click('input[value="puri-shells"]');
+    assert.equal(document.querySelector('.checklist-progress')?.textContent, '1 / 16 done');
+    assert.deepEqual(JSON.parse(env.dom.window.localStorage.getItem(CHECKLIST_STORAGE_KEY)!), ['puri-shells']);
+    await env.click('[aria-label="Close station story"]');
+    await env.click('.station-row[data-station-id="bar"]');
+    await env.click('.station-checklist summary');
+    assert.equal(document.querySelectorAll('.checklist-group').length, 2);
+    assert.equal(document.querySelectorAll('.station-checklist input').length, 25);
+    assert.equal(document.querySelector<HTMLInputElement>('input[value="margarita-tequila"]')!.checked, false);
+    await env.click('input[value="margarita-tequila"]');
+    await env.click('input[value="last-drop-gin"]');
+    assert.equal(document.querySelector('.checklist-progress')?.textContent, '2 / 25 done');
+    assert.equal(useParty.getState().simulation, before, 'checking supplies does not change the simulation');
+    await env.click('[aria-label="Close station story"]');
+    await env.click('[aria-label="Reset simulation"]');
+    await env.click('.station-row[data-station-id="puri"]');
+    await env.click('.station-checklist summary');
+    assert.equal(document.querySelector<HTMLInputElement>('input[value="puri-shells"]')!.checked, true);
+    // A fresh provider mount reads local storage, just as a page reload would.
+    await act(async () => env.root.render(null));
+    await act(async () => env.root.render(createElement(App)));
+    await env.click('.station-checklist summary');
+    assert.equal(document.querySelector<HTMLInputElement>('input[value="puri-shells"]')!.checked, true);
+    assert.match(document.querySelector('.checklist-save-note')!.textContent!, /Saved in this browser/);
+    await env.click('input[value="puri-shells"]');
+    assert.deepEqual(JSON.parse(env.dom.window.localStorage.getItem(CHECKLIST_STORAGE_KEY)!), ['margarita-tequila', 'last-drop-gin']);
+    await env.click('[aria-label="Close station story"]');
+    await env.click('.station-row[data-station-id="charades"]');
+    assert.equal(document.querySelector('.station-checklist'), null, 'no invented Charades checklist');
+  } finally { await env.cleanup(); useParty.setState(previous); }
+});
+
+test('checklists remain usable for the current visit when browser storage is blocked', async () => {
+  const env = environment(), previous = useParty.getState();
+  try {
+    Object.defineProperty(env.dom.window, 'localStorage', { configurable: true, get() { throw new Error('Storage unavailable'); } });
+    useParty.getState().reset(2030); useParty.getState().select(null);
+    await act(async () => env.root.render(createElement(App)));
+    await env.click('.station-row[data-station-id="pizza"]');
+    await env.click('.station-checklist summary');
+    await env.click('input[value="final-supper-pizzas"]');
+    assert.equal(document.querySelector('.checklist-progress')?.textContent, '1 / 8 done');
+    assert.match(document.querySelector('.checklist-save-note')!.textContent!, /this visit only/);
+    await env.click('[aria-label="Close station story"]');
+    await env.click('.station-row[data-station-id="pizza"]');
+    await env.click('.station-checklist summary');
+    assert.equal(document.querySelector<HTMLInputElement>('input[value="final-supper-pizzas"]')!.checked, true);
   } finally { await env.cleanup(); useParty.setState(previous); }
 });

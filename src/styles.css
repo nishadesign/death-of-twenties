@@ -176,3 +176,25 @@ html{scrollbar-gutter:stable}
 .stations-collapse-toggle[aria-expanded=false] svg{transform:rotate(-90deg)}
 .stations-collapse-toggle:hover{color:var(--cream)}
 #stations-content[hidden]{display:none}
+
+.station-checklist{margin:0 0 22px;border:1px solid #56432d;border-radius:5px;background:#211c18}
+.station-checklist>summary{display:grid;grid-template-columns:1fr auto 16px;gap:12px;align-items:center;min-height:52px;padding:11px 14px;cursor:pointer;list-style:none;color:#e1c69f}
+.station-checklist>summary::-webkit-details-marker{display:none}
+.station-checklist>summary>span:first-child{font:500 22px/1.15 var(--serif)}
+.station-checklist .checklist-progress{font-size:12px;font-variant-numeric:tabular-nums;color:#baa887;white-space:nowrap}
+.station-checklist>summary svg{transition:transform .15s ease}
+.station-checklist[open]>summary svg{transform:rotate(180deg)}
+.checklist-body{padding:0 14px 14px}
+.checklist-save-note{font-size:12px;color:#ad9c82;margin:2px 0 12px}
+.checklist-group{border:0;padding:0;margin:0;min-width:0}
+.checklist-group+fieldset{margin-top:22px}
+.checklist-group legend{font:500 23px/1.15 var(--serif);color:#e1c69f;padding:0;max-width:100%}
+.checklist-description{font-size:12px;color:#b6a187;margin:5px 0 9px}
+.checklist-item{display:grid;grid-template-columns:18px minmax(0,1fr);gap:10px;align-items:start;min-height:48px;padding:10px 0;border-bottom:1px solid #3e3123;cursor:pointer}
+.checklist-item:last-child{border-bottom:0}
+.checklist-item input{width:16px;height:16px;margin:3px 0 0;padding:0;accent-color:#c69d60;cursor:pointer}
+.checklist-item-name{display:block;font-size:14px;line-height:1.4;color:#e1cfb0}
+.checklist-quantity{display:block;margin-top:3px;font-size:12px;line-height:1.4;color:#b9a588}
+.checklist-item.is-checked .checklist-item-name{text-decoration:line-through;color:#a99a83}
+.checklist-item:hover{background:#2a221b}
+@media(max-width:600px){.station-checklist>summary{gap:8px;padding:11px 12px}.station-checklist>summary>span:first-child{font-size:20px}.checklist-body{padding:0 12px 12px}}
