@@ -162,7 +162,7 @@ html{scrollbar-gutter:stable}
 .station-name-tooltip{position:absolute;z-index:6;pointer-events:none;width:max-content;min-width:100px;max-width:min(176px,calc(100% - 16px));box-sizing:border-box;padding:6px 12px 5px;border:1px solid #d09a5b;background:radial-gradient(ellipse at top,#25190f,#100d0b 75%);color:#e7ad6c;text-align:center;box-shadow:inset 0 0 0 2px #130f0c,inset 0 0 0 3px #76502e,0 4px 12px #0007}
 .station-name-tooltip:before{content:"";position:absolute;inset:5px;pointer-events:none;background:linear-gradient(#ba864b,#ba864b) left top/6px 1px no-repeat,linear-gradient(#ba864b,#ba864b) left top/1px 6px no-repeat,linear-gradient(#ba864b,#ba864b) right top/6px 1px no-repeat,linear-gradient(#ba864b,#ba864b) right top/1px 6px no-repeat,linear-gradient(#ba864b,#ba864b) left bottom/6px 1px no-repeat,linear-gradient(#ba864b,#ba864b) left bottom/1px 6px no-repeat,linear-gradient(#ba864b,#ba864b) right bottom/6px 1px no-repeat,linear-gradient(#ba864b,#ba864b) right bottom/1px 6px no-repeat}
 .station-tooltip-sun{display:block;width:44px;height:12px;margin:0 auto 3px;color:#c78e4f}
-.station-name-tooltip strong{display:block;font:600 16px/1.12 var(--serif);letter-spacing:.45px;text-transform:uppercase;text-wrap:balance;overflow-wrap:break-word}
+.station-name-tooltip strong{display:block;font:600 16px/1.12 var(--serif);letter-spacing:.45px;text-transform:none;text-wrap:balance;overflow-wrap:break-word}
 .station-tooltip-rule{display:flex;align-items:center;justify-content:center;gap:4px;font-size:8px;line-height:8px;color:#bb8247;margin-top:3px}
 .station-tooltip-rule i{width:22px;height:1px;background:linear-gradient(90deg,transparent,#c48b4c)}
 .station-tooltip-rule i:last-child{transform:rotate(180deg)}
